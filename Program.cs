@@ -2,6 +2,8 @@ using Models;
 using Logic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Diagnostics;
+using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +15,26 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<INewsCalculator, NewsCalculator>();
 builder.Services.AddSingleton<IMeasurementCalculator, MeasurementCalculator>();
 
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
+
 var app = builder.Build();
+
+// Exception handling
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var errorFeature = context.Features.Get<IExceptionHandlerFeature>();
+        if (errorFeature != null) 
+        {
+            var exception = errorFeature.Error;
+
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = Text.Plain;
+            await context.Response.WriteAsync(exception.Message);
+        }
+    });
+});
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
