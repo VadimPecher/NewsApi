@@ -12,8 +12,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // DI
-builder.Services.AddSingleton<INewsCalculator, NewsCalculator>();
-builder.Services.AddSingleton<IMeasurementCalculator, MeasurementCalculator>();
+builder.Services
+    .AddSingleton<INewsCalculator, NewsCalculator>(sp => 
+        new NewsCalculator([MeasurementType.TEMP, MeasurementType.HR, MeasurementType.RR], sp)) // required measurements
+    .AddKeyedSingleton<IMeasurementCalculator, MeasurementTempCalculator>(MeasurementType.TEMP)
+    .AddKeyedSingleton<IMeasurementCalculator, MeasurementHRCalculator>(MeasurementType.HR)
+    .AddKeyedSingleton<IMeasurementCalculator, MeasurementRRCalculator>(MeasurementType.RR);
 
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 

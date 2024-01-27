@@ -2,23 +2,23 @@ using Logic;
 
 namespace Models;
 
-public class NewsCalculator(IMeasurementCalculator measurementCalculator) : INewsCalculator
+public class NewsCalculator(MeasurementType[] requiredMeasurements, IServiceProvider serviceProvider) : INewsCalculator
 {
-    private readonly MeasurementType[] RequiredMeasurements = [MeasurementType.TEMP, MeasurementType.HR, MeasurementType.RR];
-
     public NewsResult Calculate(IEnumerable<Measurement> measurements)
     {
-        if (measurements.Count() > RequiredMeasurements.Length) {
-            throw new ArgumentException($"The measurements count ({measurements.Count()}) is greater than expected ({RequiredMeasurements.Length})");
+        if (measurements.Count() > requiredMeasurements.Length) {
+            throw new ArgumentException($"The measurements count ({measurements.Count()}) is greater than expected ({requiredMeasurements.Length})");
         }
-        foreach (var requiredMeasurement in RequiredMeasurements)
+        foreach (var requiredMeasurement in requiredMeasurements)
         {
             if (measurements.FirstOrDefault(x => x.Type == requiredMeasurement) == null) {
                 throw new ArgumentException($"The {requiredMeasurement} measurement was not provided");
             }
         }
         
-        var results = Array.ConvertAll(measurements.ToArray(), m => new MeasurementResult(m.Type, measurementCalculator.Calculate(m)));
+        var results = Array.ConvertAll(measurements.ToArray(), m => new MeasurementResult(m.Type, 
+            serviceProvider.GetRequiredKeyedService<IMeasurementCalculator>(m.Type).Calculate(m))); // using calculators from DI
+
         return new NewsResult(results.Sum(x => x.Score), results);
     }
 }
